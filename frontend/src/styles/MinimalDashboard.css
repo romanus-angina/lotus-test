@@ -1,0 +1,351 @@
+/* Login Page Styles */
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #e8eff5; /* Slightly lighter background for login page */
+}
+
+.login-container {
+  background-color: #ffffff;
+  padding: 30px 40px;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+}
+
+.login-container img.logo {
+  width: 100px;
+  margin-bottom: 20px;
+}
+
+.login-container h1 {
+  font-size: 1.5rem;
+  color: #263238; /* Dark blue-gray */
+  margin-bottom: 25px;
+  font-weight: 600;
+}
+
+.login-form .input-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.login-form label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #455a64; /* Medium blue-gray */
+  font-size: 0.9rem;
+}
+
+.login-form input[type="password"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cfd8dc; /* Light gray border */
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.login-form input[type="password"]:focus {
+  border-color: #00796b; /* Teal accent */
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 121, 107, 0.2);
+}
+
+.login-form .error-message {
+  color: #d32f2f; /* Material Design error red */
+  font-size: 0.85rem;
+  margin-top: 5px;
+  text-align: center;
+}
+
+.login-form .submit-button {
+  background-color: #00796b; /* Teal */
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  width: 100%;
+  transition: background-color 0.2s;
+}
+
+.login-form .submit-button:hover {
+  background-color: #004d40; /* Darker teal */
+}
+
+/* Dashboard Page Styles */
+.dashboard-navbar {
+  background-color: #ffffff;
+  padding: 10px 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.dashboard-navbar .logo-area {
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-navbar img.logo {
+  height: 35px; /* Smaller logo for navbar */
+  margin-right: 10px;
+}
+
+.dashboard-navbar .app-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #263238;
+}
+
+.dashboard-navbar .logout-button {
+  background-color: #f44336; /* Red for logout */
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+.dashboard-navbar .logout-button:hover {
+  background-color: #c62828; /* Darker red */
+}
+
+.dashboard-main {
+  padding: 20px;
+  max-width: 1100px;
+  margin: 20px auto;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.dashboard-header h1 {
+  font-size: 1.75rem;
+  color: #263238;
+  margin: 0;
+}
+
+.add-patient-btn {
+  background-color: #00796b; /* Teal */
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+.add-patient-btn:hover {
+  background-color: #004d40; /* Darker teal */
+}
+
+/* Patient Table */
+.patient-table-wrapper {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  overflow-x: auto; /* For responsiveness */
+}
+
+.patient-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.patient-table th,
+.patient-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0; /* Lighter border */
+}
+
+.patient-table thead th {
+  background-color: #f5f5f5; /* Very light gray for header */
+  color: #37474f; /* Darker gray for header text */
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.patient-table tbody tr:hover {
+  background-color: #f0f4f8; /* Light hover effect */
+}
+
+.patient-table .call-summary-cell {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.85rem;
+  color: #546e7a; /* Muted text color */
+}
+.patient-table .call-summary-cell:hover {
+  white-space: normal;
+  overflow: visible;
+}
+
+
+.patient-table .actions-cell button {
+  background-color: #009688; /* Teal variant for call button */
+  color: white;
+  border: none;
+  padding: 7px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background-color 0.2s;
+}
+.patient-table .actions-cell button:disabled {
+  background-color: #bdbdbd; /* Gray when disabled */
+  cursor: not-allowed;
+}
+.patient-table .actions-cell button:hover:not(:disabled) {
+  background-color: #00695c; /* Darker teal variant */
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 450px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #263238;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: #757575;
+}
+.modal-close-btn:hover {
+  color: #333;
+}
+
+.modal-form .input-group {
+  margin-bottom: 15px;
+}
+
+.modal-form label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #455a64;
+  font-size: 0.9rem;
+}
+
+.modal-form input[type="text"],
+.modal-form input[type="tel"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #cfd8dc;
+  border-radius: 5px;
+  font-size: 0.95rem;
+}
+.modal-form input[type="text"]:focus,
+.modal-form input[type="tel"]:focus {
+  border-color: #00796b;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 121, 107, 0.2);
+}
+.modal-form small {
+  font-size: 0.8rem;
+  color: #546e7a;
+  margin-top: 3px;
+  display: block;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-button {
+  padding: 10px 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: none;
+  transition: background-color 0.2s;
+}
+.modal-button.primary {
+  background-color: #00796b; /* Teal */
+  color: white;
+}
+.modal-button.primary:hover {
+  background-color: #004d40; /* Darker teal */
+}
+.modal-button.primary:disabled {
+  background-color: #bdbdbd;
+}
+.modal-button.secondary {
+  background-color: #eceff1; /* Light gray */
+  color: #37474f;
+  border: 1px solid #cfd8dc;
+}
+.modal-button.secondary:hover {
+  background-color: #cfd8dc;
+}
+
+/* Loading and No Data States */
+.loading-state, .no-data-state {
+  text-align: center;
+  padding: 30px;
+  font-size: 1rem;
+  color: #546e7a;
+}
