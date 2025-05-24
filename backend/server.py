@@ -7,9 +7,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, Request, Body, Background
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import HTMLResponse
 from fastapi.responses import StreamingResponse
-
-# Import your existing modules
-from bot import run_enhanced_clinical_bot
+from bot import run_bot
 from caller import make_call
 from db_service import MongoDBService
 import call_state
@@ -55,24 +53,22 @@ async def twiml_response(request: Request):
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """Enhanced WebSocket endpoint with LangChain integration"""
+    print("LOTUS: WebSocket connection attempt")
     await websocket.accept()
     start_data = websocket.iter_text()
     await start_data.__anext__()
     call_data = json.loads(await start_data.__anext__())
     
-    print("Call data:", call_data, flush=True)
+    print("LOTUS call data:", call_data, flush=True)
     
     stream_sid = call_data.get("start", {}).get("streamSid")
     call_sid = call_data.get("start", {}).get("callSid")
     
-    print(f"Stream SID: {stream_sid}", flush=True)
-    print(f"Call SID: {call_sid}", flush=True)
+    print(f"LOTUS stream sid: {stream_sid}", flush=True)
+    print(f"LOTUS call sid: {call_sid}", flush=True)
     
-    # Link stream to call in state management
     if call_sid:
         call_state.link_stream_sid(call_sid, stream_sid)
-        print(f"Linked stream {stream_sid} to call {call_sid}", flush=True)
     
     # Update call status in MongoDB
     try:
@@ -81,26 +77,26 @@ async def websocket_endpoint(websocket: WebSocket):
             {"$set": {
                 "call_sid": call_sid,
                 "call_status": "in_progress",
-                "call_started": datetime.datetime.utcnow()
+                "call_started": datetime.datetime.utcnow(),
+                "server_identifier": "LOTUS_SERVER"
             }},
             upsert=True
         )
     except Exception as e:
         print(f"Error updating call status: {e}", flush=True)
     
-    # Run the enhanced clinical bot with LangChain
-    await run_enhanced_clinical_bot(websocket, stream_sid, app.state.testing)
+    await run_bot(websocket, stream_sid, app.state.testing)
 
 @app.post("/call")
 async def api_call(data: dict = Body(...)):
-    """Enhanced endpoint to initiate a call with participant tracking"""
+    """endpoint to initiate a call"""
     try:
         to_number = data.get("to")
         from_number = data.get("from") or os.getenv("TWILIO_PHONE_NUMBER")
         participant_name = data.get("participant_name", "Unknown Participant")
 
         if not to_number:
-            raise HTTPException(status_code=400, detail="Phone number is required")
+            raise HTTPException(status_code=400, detail="to number is required")
         
         if not from_number:
             raise HTTPException(status_code=500, detail="TWILIO_PHONE_NUMBER missing")
@@ -109,92 +105,91 @@ async def api_call(data: dict = Body(...)):
         if not to_number.startswith("+"):
             to_number = "+" + to_number
         
-        print(f"Attempting to call {participant_name} at {to_number} from {from_number}", flush=True)
+        print(f"attempting to call {participant_name} at {to_number} from {from_number}", flush=True)
         
-        # Make the call using your existing caller
+        # IMPORTANT: Use your Lotus server URL, not the Klix one
+        webhook_base = os.getenv("WEBHOOK_BASE_URL", "https://lotustest.ngrok.io")
+        webhook_url = f"{webhook_base}/twiml"
+        
         sid = make_call(
             to_number=to_number,
             from_number=from_number,
-            webhook_url= "https://lotustest.ngrok.io/twiml",
+            webhook_url=webhook_url,  # Use Lotus server
             account_sid=os.getenv("TWILIO_ACCOUNT_SID"),
             auth_token=os.getenv("TWILIO_AUTH_TOKEN")
         )
 
         if sid:
-            # Enhanced call data storage with participant info
-            call_state.CALL_DATA[sid]["participant_name"] = participant_name
-            
-            # Save initial call record to MongoDB with participant context
-            try:
-                await db_service.save_call(
-                    stream_sid=f"pending_{sid}",  # Temporary until we get real stream_sid
-                    from_number=from_number,
-                    to_number=to_number,
-                    metadata={
-                        "participant_name": participant_name,
-                        "call_sid": sid,
-                        "call_initiated": datetime.datetime.utcnow().isoformat(),
-                        "call_type": "clinical_trial_checkin"
-                    }
-                )
-            except Exception as e:
-                print(f"Error saving initial call record: {e}", flush=True)
+            # Store participant info in call state
+            if sid in call_state.CALL_DATA:
+                call_state.CALL_DATA[sid]["participant_name"] = participant_name
             
             return {
-                "message": f"Call initiated successfully to {participant_name}",
-                "sid": sid,
+                "message": f"call initiated successfully to {participant_name}", 
+                "sid": sid, 
                 "participant_name": participant_name,
-                "status": "success"
+                "status": "success",
+                "webhook_url": webhook_url
             }
         else:
-            return {"message": "Failed to get call SID", "status": "error"}
+            return {"message": "failed to get call sid", "status": "error"}
             
     except Exception as e:
         print(f"Error in api_call: {str(e)}", flush=True)
         return {"message": f"Error: {str(e)}", "status": "error"}
-
-# Enhanced API endpoints for clinical dashboard integration
+    
 @app.get("/api/calls")
 async def get_calls():
-    """Get all calls with enhanced clinical context"""
+    """get a list of all calls with transcripts"""
     try:
-        # Get calls with clinical screening data
+        print("BACKEND: Fetching calls from MongoDB", flush=True)
+        
+        # Get all calls from the database, but exclude audio_data to keep responses small
         calls = await db_service.db.calls.find(
             {},
-            {"audio_data": 0}  # Exclude large audio data
+            {"audio_data": 0}
         ).sort("created_at", -1).to_list(length=100)
         
-        # Enhance call data with clinical context
-        enhanced_calls = []
-        for call in calls:
+        print(f"BACKEND: Found {len(calls)} calls in database", flush=True)
+        
+        # Convert ObjectId to string for JSON serialization and enhance data
+        for i, call in enumerate(calls):
             call["_id"] = str(call["_id"])
             
-            # Add clinical summary if available
-            if call.get("ai_summary"):
+            print(f"BACKEND: Call {i+1} - Stream: {call.get('stream_sid')}", flush=True)
+            print(f"  Phone: {call.get('to_number')}", flush=True)
+            print(f"  Has transcript: {bool(call.get('transcript'))}", flush=True)
+            print(f"  Has ai_summary: {bool(call.get('ai_summary'))}", flush=True)
+            print(f"  Has clinical_summary: {bool(call.get('clinical_summary'))}", flush=True)
+            print(f"  Call completed: {call.get('call_completed', False)}", flush=True)
+            
+            # Ensure clinical_summary is available at the top level
+            if not call.get("clinical_summary") and call.get("ai_summary"):
                 call["clinical_summary"] = call["ai_summary"]
-            elif call.get("transcript"):
-                # Generate quick summary if not exists
-                call["clinical_summary"] = await generate_quick_summary(call["transcript"])
+                print(f"  Copied ai_summary to clinical_summary", flush=True)
             
-            # Add call duration
-            if call.get("call_started") and call.get("completion_time"):
-                duration = call["completion_time"] - call["call_started"]
-                call["call_duration"] = str(duration)
-            
-            # Add screening progress
-            screening = call.get("screening_data", {})
-            call["medication_checked"] = bool(screening.get("medication_check"))
-            call["symptoms_checked"] = bool(screening.get("symptom_assessment"))
-            
-            enhanced_calls.append(call)
+            # Add participant name from metadata if missing
+            if not call.get("participant_name") and not call.get("contact_name"):
+                metadata_name = call.get("metadata", {}).get("participant_name")
+                if metadata_name:
+                    call["participant_name"] = metadata_name
+                    call["contact_name"] = metadata_name
+                    print(f"  Added participant name: {metadata_name}", flush=True)
         
-        # Get contacts without calls (for dashboard)
-        existing_numbers = {call.get("to_number") for call in enhanced_calls if call.get("to_number")}
+        # Get all phone numbers that already have calls
+        existing_phone_numbers = set()
+        for call in calls:
+            if "to_number" in call and call["to_number"]:
+                existing_phone_numbers.add(call["to_number"])
+        
+        # Get contacts that don't have any calls yet
         contacts_without_calls = await db_service.db.contacts.find(
-            {"phone_number": {"$nin": list(existing_numbers)}}
+            {"phone_number": {"$nin": list(existing_phone_numbers)}}
         ).to_list(length=100)
         
-        # Create virtual call entries for contacts without calls
+        print(f"BACKEND: Found {len(contacts_without_calls)} contacts without calls", flush=True)
+        
+        # Create "virtual" call entries for contacts without calls
         for contact in contacts_without_calls:
             virtual_call = {
                 "_id": str(contact["_id"]),
@@ -204,14 +199,18 @@ async def get_calls():
                 "participant_name": contact["name"],
                 "created_at": contact.get("created_at", datetime.datetime.utcnow()).isoformat(),
                 "virtual_contact": True,
-                "call_status": "not_called",
                 "clinical_summary": "No calls yet - ready for initial contact"
             }
-            enhanced_calls.append(virtual_call)
+            calls.append(virtual_call)
         
-        return {"calls": enhanced_calls}
+        print(f"BACKEND: Returning {len(calls)} total entries to frontend", flush=True)
+        
+        return {"calls": calls}
+        
     except Exception as e:
-        print(f"Error fetching calls: {str(e)}", flush=True)
+        print(f"BACKEND: Error fetching calls: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.get("/api/calls/{stream_sid}/audio")
@@ -290,6 +289,17 @@ async def save_call_notes(phone_number: str, data: dict = Body(...)):
     except Exception as e:
         print(f"Error saving clinical notes: {str(e)}", flush=True)
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+    
+@app.get("/api/server-identity")
+async def server_identity():
+    """Endpoint to verify which server is responding"""
+    return {
+        "server": "LOTUS_LOCAL_SERVER",
+        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "message": "This is the Lotus test server running locally",
+        "webhook_base_url": os.getenv("WEBHOOK_BASE_URL", "Not set"),
+        "environment": os.getenv("ENVIRONMENT", "Not set")
+    }
 
 # Enhanced eligibility analysis with clinical context
 @app.post("/api/calls/{stream_sid}/analyze")
